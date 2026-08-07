@@ -1,0 +1,38 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - ecommerce-media-tool
+    paths:
+      - 'ecommerce_media_tool/**'
+      - '.github/workflows/build-windows.yml'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ecommerce_media_tool
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Build single-file EXE
+        run: pyinstaller --noconfirm --clean --onefile --windowed --name "商家素材管家" main.py
+      - name: Show EXE size
+        shell: pwsh
+        run: |
+          $f = Get-Item "dist/商家素材管家.exe"
+          Write-Host ("EXE size: {0:N2} MB" -f ($f.Length / 1MB))
+          if ($f.Length -gt 1GB) { throw "EXE exceeds 1GB" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 商家素材管家-windows
+          path: ecommerce_media_tool/dist/商家素材管家.exe
