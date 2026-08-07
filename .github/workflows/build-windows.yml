@@ -8,6 +8,12 @@ on:
     paths:
       - 'ecommerce_media_tool/**'
       - '.github/workflows/build-windows.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'ecommerce_media_tool/**'
+      - '.github/workflows/build-windows.yml'
 
 jobs:
   build:
