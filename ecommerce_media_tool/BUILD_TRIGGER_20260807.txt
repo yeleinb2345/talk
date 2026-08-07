@@ -1,0 +1,1 @@
+Trigger Windows EXE build for 商家素材管家 v1.1 on 2026-08-07.
