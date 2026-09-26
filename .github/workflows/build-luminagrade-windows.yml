@@ -26,21 +26,28 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Install FFmpeg
+      - name: Install real FFmpeg binaries
         shell: pwsh
         run: |
           choco install ffmpeg -y --no-progress
-          ffmpeg -version
-          ffprobe -version
+          $tools = Join-Path $env:ChocolateyInstall "lib\ffmpeg\tools"
+          $ffmpeg = Get-ChildItem -Path $tools -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1 -ExpandProperty FullName
+          $ffprobe = Get-ChildItem -Path $tools -Recurse -Filter "ffprobe.exe" | Select-Object -First 1 -ExpandProperty FullName
+          if (!$ffmpeg -or !(Test-Path $ffmpeg)) { throw "Real ffmpeg.exe not found under $tools" }
+          if (!$ffprobe -or !(Test-Path $ffprobe)) { throw "Real ffprobe.exe not found under $tools" }
+          if ((Get-Item $ffmpeg).Length -lt 1000000) { throw "ffmpeg.exe looks like a Chocolatey shim: $ffmpeg" }
+          if ((Get-Item $ffprobe).Length -lt 1000000) { throw "ffprobe.exe looks like a Chocolatey shim: $ffprobe" }
+          & $ffmpeg -version
+          & $ffprobe -version
+          "LUMINAGRADE_FFMPEG=$ffmpeg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "LUMINAGRADE_FFPROBE=$ffprobe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Build portable EXE
         shell: pwsh
         run: |
-          $ffmpeg = (Get-Command ffmpeg).Source
-          $ffprobe = (Get-Command ffprobe).Source
           pyinstaller --noconfirm --clean --onefile --windowed --name "LuminaGrade" `
-            --add-binary "$ffmpeg;." `
-            --add-binary "$ffprobe;." `
+            --add-binary "$env:LUMINAGRADE_FFMPEG;." `
+            --add-binary "$env:LUMINAGRADE_FFPROBE;." `
             app.py
 
       - name: Smoke test EXE exists
